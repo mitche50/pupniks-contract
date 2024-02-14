@@ -6,6 +6,7 @@ import "@solady/tokens/ERC721.sol";
 import "@solady/auth/Ownable.sol";
 import "@solady/utils/ECDSA.sol";
 import "@solady/utils/LibString.sol";
+import "src/interfaces/IBlast.sol";
 
 error InvalidSignature();
 error InvalidHash();
@@ -27,7 +28,7 @@ contract Pupniks is ERC721, Ownable {
     uint256 public constant MAX_MINTING_PER_TX = 5;
     uint256 private constant ONE = 1;
     uint256 private constant ZERO = 0;
-    address private constant BLAST = IBlast(0x4300000000000000000000000000000000000002);
+    IBlast private constant BLAST = IBlast(0x4300000000000000000000000000000000000002);
 
     /// @dev Map of an address to a bitmap (slot => status)
     mapping(address => mapping(uint256 => uint256)) private _usedNonces;
@@ -45,7 +46,7 @@ contract Pupniks is ERC721, Ownable {
     address private _signerAddress;
 
     constructor() ERC721() {
-        if(chainId == 168587773) {
+        if(block.chainid == 168587773) {
             BLAST.configureContract(address(this), YieldMode.CLAIMABLE, GasMode.CLAIMABLE, address(this));
         }
         _initializeOwner(msg.sender);
@@ -168,7 +169,7 @@ contract Pupniks is ERC721, Ownable {
      */
     function withdrawYield() external onlyOwner {
         if (BLAST.readClaimableYield(address(this)) > 0) {
-            BLAST.claimAllYield(address(this), owner);
+            BLAST.claimAllYield(address(this), owner());
         }
     }
 
@@ -176,7 +177,7 @@ contract Pupniks is ERC721, Ownable {
      * @notice Withdraws any claimable gas from the contract. Only the owner can call this function.
      */
     function withdrawGas() external onlyOwner {
-        BLAST.claimAllGas(address(this), owner);
+        BLAST.claimAllGas(address(this), owner());
     }
 
     /**
@@ -189,8 +190,8 @@ contract Pupniks is ERC721, Ownable {
     /**
      * @notice Returns the amount of claimable gas for the contract.
      */
-    function claimableGas() external view returns (uint256) {
-        return BLAST.readGasParams(address(this)).etherBalance;
+    function claimableGas() external view returns (uint256 etherBalance) {
+        (, etherBalance, , ) = BLAST.readGasParams(address(this));
     }
 
     /**

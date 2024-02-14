@@ -182,7 +182,7 @@ contract PupniksTest is TestBase, StdCheats, StdAssertions, StdUtils {
 
         pupniks.redeemPupnik(1);
         assertEq(pupniks.balanceOf(user), amount - 1);
-        assertEq(pupniks.amountMinted(), amount);
+        assertEq(pupniks.amountMinted(), amount - 1);
         assertEq(address(pupniks).balance, 0.5 ether * (amount - 1));
         assertEq(address(user).balance, 10000 ether - (0.5 ether * (amount - 1)));
     }
@@ -213,7 +213,7 @@ contract PupniksTest is TestBase, StdCheats, StdAssertions, StdUtils {
 
         pupniks.redeemPupnikBatch(tokenIds);
         assertEq(pupniks.balanceOf(user), 0);
-        assertEq(pupniks.amountMinted(), 5);
+        assertEq(pupniks.amountMinted(), 0);
         assertEq(address(pupniks).balance, 0);
         assertEq(address(user).balance, 10000 ether);
     }
