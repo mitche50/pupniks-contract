@@ -6,3 +6,6 @@ optimizer = true
 optimizer_runs = 40_000
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+
+[rpc_endpoints]
+blast-sepolia = 'https://rpc.ankr.com/blast_testnet_sepolia'

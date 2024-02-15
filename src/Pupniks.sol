@@ -5,8 +5,20 @@ import "@solady/tokens/ERC721.sol";
 import "@solady/auth/Ownable.sol";
 import "@solady/utils/ECDSA.sol";
 import "@solady/utils/LibString.sol";
-import "src/Errors.sol";
-import "src/Constants.sol";
+import "src/interfaces/IBlast.sol";
+
+
+error InvalidSignature();
+error InvalidHash();
+error SaleClosed();
+error ContractLocked();
+error OutOfStock();
+error IncorrectAmountSent();
+error NotApprovedOrOwner();
+error TokenNotFound();
+error NonceAlreadyUsedOrRevoked();
+error CannotMintMoreThanMax();
+error RedemptionTransferFailed();
 
 contract Pupniks is ERC721, Ownable {
     using LibString for uint256;
@@ -17,6 +29,11 @@ contract Pupniks is ERC721, Ownable {
     event MetadataLocked();
     event SaleStatusToggled(bool live);
     event SignerAddressSet(address oldSigner, address newSigner);
+
+    uint256 private constant TOTAL_SUPPLY = 3000;
+    uint256 private constant PRICE = 0.5 ether;
+    uint256 private constant MAX_MINTING_PER_TX = 5;
+    IBlast private constant BLAST = IBlast(0x4300000000000000000000000000000000000002);
 
     /// @dev Map of an address to a bitmap (slot => status)
     mapping(address => mapping(uint256 => uint256)) private _usedNonces;
@@ -34,8 +51,10 @@ contract Pupniks is ERC721, Ownable {
     address private _signerAddress;
 
     constructor() {
-        BLAST.configureContract(address(this), YieldMode.CLAIMABLE, GasMode.CLAIMABLE, address(this));
         _initializeOwner(msg.sender);
+        BLAST.configureClaimableGas();
+        // Commented due to configuration issue on BLAST testnet.
+        // BLAST.configureClaimableYield();
     }
 
     /**

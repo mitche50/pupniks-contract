@@ -6,7 +6,6 @@ import "forge-std/StdAssertions.sol";
 import "forge-std/StdUtils.sol";
 import {TestBase} from "forge-std/Base.sol";
 import "src/Pupniks.sol";
-import "src/Errors.sol";
 
 contract PupniksTest is TestBase, StdCheats, StdAssertions, StdUtils {
     address owner = makeAddr("owner");
@@ -17,6 +16,7 @@ contract PupniksTest is TestBase, StdCheats, StdAssertions, StdUtils {
     Pupniks public pupniks;
 
     function _deploy() internal {
+        vm.createSelectFork(vm.rpcUrl("blast-sepolia"));
         vm.warp(1707864020);
 
         vm.deal(owner, 10000 ether);
