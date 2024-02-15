@@ -6,9 +6,9 @@ import "forge-std/StdAssertions.sol";
 import "forge-std/StdUtils.sol";
 import {TestBase} from "forge-std/Base.sol";
 import "src/Pupniks.sol";
+import "src/Errors.sol";
 
 contract PupniksTest is TestBase, StdCheats, StdAssertions, StdUtils {
-
     address owner = makeAddr("owner");
     address user = makeAddr("user");
     address signer;
@@ -36,8 +36,8 @@ contract PupniksTest is TestBase, StdCheats, StdAssertions, StdUtils {
         assertEq(pupniks.amountMinted(), 0);
         assertEq(pupniks.saleLive(), false);
         assertEq(pupniks.locked(), false);
-        assertEq(pupniks.PRICE(), 0.5 ether);
-        assertEq(pupniks.TOTAL_SUPPLY(), 3000);
+        assertEq(pupniks.getPrice(), 0.5 ether);
+        assertEq(pupniks.getTotalSupply(), 3000);
         assertEq(pupniks.owner(), owner);
     }
 
@@ -115,7 +115,7 @@ contract PupniksTest is TestBase, StdCheats, StdAssertions, StdUtils {
         assertEq(pupniks.balanceOf(user), amount);
         assertEq(pupniks.amountMinted(), amount);
         assertEq(pupniks.isValidNonce(user, nonce), false);
-        assertEq(address(pupniks).balance,ethToSend);
+        assertEq(address(pupniks).balance, ethToSend);
         assertEq(address(user).balance, 10000 ether - ethToSend);
 
         vm.expectRevert(NonceAlreadyUsedOrRevoked.selector);
@@ -223,11 +223,14 @@ contract PupniksTest is TestBase, StdCheats, StdAssertions, StdUtils {
         vm.startPrank(msgSender);
     }
 
-    function getSignature(address addr, uint256 nonce, uint256 quantity, uint256 pkey) public pure returns (bytes32 hash, uint8 v, bytes32 r, bytes32 s) {
-        hash = keccak256(abi.encodePacked(
-            "\x19Ethereum Signed Message:\n32",
-            keccak256(abi.encodePacked(addr, quantity, nonce)))
-          );
+    function getSignature(address addr, uint256 nonce, uint256 quantity, uint256 pkey)
+        public
+        pure
+        returns (bytes32 hash, uint8 v, bytes32 r, bytes32 s)
+    {
+        hash = keccak256(
+            abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(abi.encodePacked(addr, quantity, nonce)))
+        );
         (v, r, s) = vm.sign(pkey, hash);
     }
 }
