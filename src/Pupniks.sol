@@ -194,9 +194,18 @@ contract Pupniks is ERC721, Ownable {
 
     /**
      * @notice Withdraws any claimable gas from the contract. Only the owner can call this function.
+     * @dev NOTE: if gas is not all fully claimable, calling this will result in a loss of unvested gas fees.
      */
-    function withdrawGas() external onlyOwner {
+    function withdrawAllGas() external onlyOwner {
         BLAST.claimAllGas(address(this), owner());
+    }
+
+    /**
+     * @notice Withdraws gas from the contract at the minimum claim rate. Only the owner can call this function.
+     * @dev Claim rate is in BIPs, so an 80% claim rate would be 8000.
+     */
+    function withdrawGasAtMinClaimrate(uint256 minClaimRateBips) external onlyOwner {
+        BLAST.claimGasAtMinClaimRate(address(this), owner(), minClaimRateBips);
     }
 
     /**
