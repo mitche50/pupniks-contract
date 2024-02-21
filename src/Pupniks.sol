@@ -20,6 +20,7 @@ error NonceAlreadyUsedOrRevoked();
 error CannotMintMoreThanMax();
 error RedemptionTransferFailed();
 error CannotMintSpecificIdsUntilAllMinted();
+error InvalidTokenId();
 
 contract Pupniks is ERC721, Ownable {
     using LibString for uint256;
@@ -125,6 +126,9 @@ contract Pupniks is ERC721, Ownable {
 
         unchecked {
             for (uint256 i = 0; i < quantity;) {
+                if (ids[i] > TOTAL_SUPPLY) {
+                    revert InvalidTokenId();
+                }
                 _mint(msg.sender, ids[i]);
                 ++i;
             }
