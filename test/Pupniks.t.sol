@@ -35,7 +35,7 @@ contract PupniksTest is TestBase, StdCheats, StdAssertions, StdUtils {
         assertEq(pupniks.balanceOf(user), 0);
         assertEq(pupniks.amountMinted(), 0);
         assertEq(pupniks.saleLive(), false);
-        assertEq(pupniks.locked(), false);
+        assertEq(pupniks.metadataLocked(), false);
         assertEq(pupniks.getPrice(), 0.5 ether);
         assertEq(pupniks.getTotalSupply(), 3000);
         assertEq(pupniks.owner(), owner);
@@ -118,7 +118,7 @@ contract PupniksTest is TestBase, StdCheats, StdAssertions, StdUtils {
         assertEq(address(pupniks).balance, ethToSend);
         assertEq(address(user).balance, 10000 ether - ethToSend);
 
-        vm.expectRevert(NonceAlreadyUsedOrRevoked.selector);
+        vm.expectRevert(NonceAlreadyUsed.selector);
         pupniks.mintPupnik{value: ethToSend}(hash, abi.encodePacked(r, s, v), nonce, amount);
     }
 
@@ -158,6 +158,56 @@ contract PupniksTest is TestBase, StdCheats, StdAssertions, StdUtils {
 
         vm.expectRevert(OutOfStock.selector);
         pupniks.mintPupnik{value: 0.5 ether}(hash2, abi.encodePacked(r2, s2, v2), nonce + 601, 1);
+    }
+
+    function test_mintSpecificIDBeforeSaleOver(uint256 nonce) public {
+        nonce = bound(nonce, 0, 255);
+        _deploy();
+
+        changePrank(owner);
+        pupniks.setSignerAddress(signer);
+        pupniks.toggleSaleStatus();
+        changePrank(user);
+
+        (bytes32 hash, uint8 v, bytes32 r, bytes32 s) = getSignature(user, nonce, 1, signerPkey);
+
+        uint256[] memory ids = new uint256[](1);
+        ids[0] = 1;
+
+        vm.expectRevert(CannotMintSpecificIdsUntilAllMinted.selector);
+        pupniks.mintSpecificPupniks{value: 0.5 ether}(hash, abi.encodePacked(r, s, v), nonce, ids);
+    }
+
+    function test_mintPupnik_specificId(uint256 nonce) public {
+        nonce = bound(nonce, 0, 255);
+        _deploy();
+
+        changePrank(owner);
+        pupniks.setSignerAddress(signer);
+        pupniks.toggleSaleStatus();
+        changePrank(user);
+
+        uint256 amountToSend = 0.5 ether * 5;
+
+        for (uint256 i = 0; i < 600; i++) {
+            (bytes32 hash, uint8 v, bytes32 r, bytes32 s) = getSignature(user, nonce + i, 5, signerPkey);
+
+            pupniks.mintPupnik{value: amountToSend}(hash, abi.encodePacked(r, s, v), nonce + i, 5);
+        }
+
+        assertEq(pupniks.amountMinted(), 3000);
+
+        (bytes32 hash2, uint8 v2, bytes32 r2, bytes32 s2) = getSignature(user, nonce + 601, 1, signerPkey);
+
+        vm.expectRevert(OutOfStock.selector);
+        pupniks.mintPupnik{value: 0.5 ether}(hash2, abi.encodePacked(r2, s2, v2), nonce + 601, 1);
+
+        uint256[] memory ids = new uint256[](1);
+        ids[0] = 1;
+
+        pupniks.redeemPupnik(1);
+
+        pupniks.mintSpecificPupniks{value: 0.5 ether}(hash2, abi.encodePacked(r2, s2, v2), nonce + 601, ids);
     }
 
     function test_redeemPupnik(uint256 amount) public {
@@ -229,7 +279,7 @@ contract PupniksTest is TestBase, StdCheats, StdAssertions, StdUtils {
         returns (bytes32 hash, uint8 v, bytes32 r, bytes32 s)
     {
         hash = keccak256(
-            abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(abi.encodePacked(addr, quantity, nonce)))
+            abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(abi.encodePacked(addr, nonce, quantity)))
         );
         (v, r, s) = vm.sign(pkey, hash);
     }
