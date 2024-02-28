@@ -56,8 +56,6 @@ contract Pupniks is ERC721, Ownable {
     constructor() {
         _initializeOwner(msg.sender);
         BLAST.configureClaimableGas();
-        // Commented due to configuration issue on BLAST testnet.
-        // BLAST.configureClaimableYield();
     }
 
     /**
@@ -172,6 +170,45 @@ contract Pupniks is ERC721, Ownable {
         if (!success) {
             revert RedemptionTransferFailed();
         }
+    }
+
+    /**
+     * @notice Owner mint for pupniks allowing team to mint before opening.
+     *
+     * @param quantity Number of pupniks to mint
+     */
+    function ownerMint(uint256 quantity) external payable onlyOwner {
+        uint256 currentAmount = amountMinted;
+
+        if (currentAmount + quantity > TOTAL_SUPPLY) {
+            revert OutOfStock();
+        }
+        if (PRICE * quantity != msg.value) {
+            revert IncorrectAmountSent();
+        }
+
+        unchecked {
+            amountMinted += quantity;
+
+            for (uint256 i = 1; i <= quantity;) {
+                _mint(msg.sender, currentAmount + i);
+                ++i;
+            }
+        }
+    }
+
+    /**
+     * @notice Turns on claimable yield for the contract.
+     */
+    function configureClaimableYield() external onlyOwner {
+        BLAST.configureClaimableYield();
+    }
+
+    /**
+     * @notice Updates the governor of the contract.
+     */
+    function configureGovernor(address newGov) external onlyOwner {
+        BLAST.configureGovernor(newGov);
     }
 
     /**
